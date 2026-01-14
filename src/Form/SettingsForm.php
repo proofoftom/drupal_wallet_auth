@@ -7,6 +7,7 @@ namespace Drupal\wallet_auth\Form;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
+use Drupal\Core\Routing\RequestContext;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -22,19 +23,30 @@ class SettingsForm extends ConfigFormBase {
   protected $logger;
 
   /**
+   * The request context.
+   *
+   * @var \Drupal\Core\Routing\RequestContext
+   */
+  protected $requestContext;
+
+  /**
    * Constructs a SettingsForm.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
    * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
    *   The logger channel factory.
+   * @param \Drupal\Core\Routing\RequestContext $request_context
+   *   The request context.
    */
   public function __construct(
     $config_factory,
     LoggerChannelFactoryInterface $logger_factory,
+    RequestContext $request_context,
   ) {
     parent::__construct($config_factory);
     $this->logger = $logger_factory->get('wallet_auth');
+    $this->requestContext = $request_context;
   }
 
   /**
@@ -44,6 +56,7 @@ class SettingsForm extends ConfigFormBase {
     return new static(
       $container->get('config.factory'),
       $container->get('logger.factory'),
+      $container->get('router.request_context'),
     );
   }
 
@@ -92,8 +105,8 @@ class SettingsForm extends ConfigFormBase {
 
     $form['nonce_lifetime'] = [
       '#type' => 'number',
-      '#title' => $this->t('Nonce lifetime'),
-      '#description' => $this->t('The lifetime of authentication nonces in seconds. Default is 300 (5 minutes).'),
+      '#title' => $this->t('Authentication timeout'),
+      '#description' => $this->t('How long the authentication challenge is valid in seconds. Default is 300 (5 minutes).'),
       '#default_value' => $config->get('nonce_lifetime') ?? 300,
       '#min' => 60,
       '#max' => 3600,
@@ -138,7 +151,7 @@ class SettingsForm extends ConfigFormBase {
       '#description' => $this->t('The internal Drupal path to redirect to after successful authentication (e.g., /user or /dashboard).'),
       '#default_value' => $config->get('redirect_on_success') ?? '/user',
       '#required' => TRUE,
-      '#field_prefix' => '/',
+      '#field_prefix' => $this->requestContext->getCompleteBaseUrl(),
     ];
 
     return parent::buildForm($form, $form_state);
