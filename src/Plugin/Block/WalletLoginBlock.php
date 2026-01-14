@@ -89,6 +89,7 @@ class WalletLoginBlock extends BlockBase implements ContainerFactoryPluginInterf
 
     // Read configuration.
     $config = $this->configFactory->get('wallet_auth.settings');
+    $network = $config->get('network') ?? 'mainnet';
 
     $build['#theme'] = 'wallet_login_button';
     $build['#attached'] = [
@@ -98,7 +99,8 @@ class WalletLoginBlock extends BlockBase implements ContainerFactoryPluginInterf
       'drupalSettings' => [
         'walletAuth' => [
           'apiEndpoint' => '/wallet-auth',
-          'network' => $config->get('network') ?? 'mainnet',
+          'network' => $network,
+          'chainId' => $this->getChainId($network),
           'enableAutoConnect' => $config->get('enable_auto_connect') ?? TRUE,
           'authenticationMethods' => $config->get('authentication_methods') ?? ['email', 'social'],
           'allowedSocials' => $config->get('allowed_socials') ?? ['google', 'twitter', 'discord', 'bluesky'],
@@ -121,6 +123,28 @@ class WalletLoginBlock extends BlockBase implements ContainerFactoryPluginInterf
   public function blockAccess(AccountInterface $account) {
     // Only show for anonymous users.
     return $account->isAnonymous() ? AccessResult::allowed() : AccessResult::forbidden();
+  }
+
+  /**
+   * Get chain ID for a network name.
+   *
+   * @param string $network
+   *   The network name (e.g., 'mainnet', 'sepolia').
+   *
+   * @return int
+   *   The chain ID for the network.
+   */
+  protected function getChainId(string $network): int {
+    $chainIds = [
+      'mainnet' => 1,
+      'sepolia' => 11155111,
+      'polygon' => 137,
+      'bsc' => 56,
+      'arbitrum' => 42161,
+      'optimism' => 10,
+    ];
+
+    return $chainIds[$network] ?? 1;
   }
 
 }
