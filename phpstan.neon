@@ -2,7 +2,6 @@ parameters:
   level: 6
   paths:
     - src
+    - tests
   drupal:
     drupal_root: %currentWorkingDirectory%/../../../..
-  ignoreErrors:
-    - '#Call to an undefined method Drupal\\Core\\Entity\\EntityInterface::#'
