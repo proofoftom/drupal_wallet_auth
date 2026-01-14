@@ -36,6 +36,9 @@ wallet_auth.settings:
     showSecured:
       type: boolean
       label: 'Show secured by human.tech badge'
+    button_text:
+      type: string
+      label: 'Sign-in button text'
     project:
       type: mapping
       label: 'Project branding'

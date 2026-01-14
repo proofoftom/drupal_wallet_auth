@@ -255,6 +255,15 @@ class SettingsForm extends ConfigFormBase {
       '#maxlength' => 255,
     ];
 
+    $form['branding_settings']['button_text'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Sign-in button text'),
+      '#description' => $this->t('Text to display on the sign-in button.'),
+      '#default_value' => $config->get('button_text') ?? 'Sign In',
+      '#maxlength' => 50,
+      '#required' => TRUE,
+    ];
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -331,6 +340,7 @@ class SettingsForm extends ConfigFormBase {
       ->set('project.logo', $logo_base64)
       ->set('project.logo_fid', $logo_fid)
       ->set('project.entryTitle', $form_state->getValue('project_entryTitle'))
+      ->set('button_text', $form_state->getValue('button_text'))
       ->save();
 
     $this->logger->info('Wallet authentication settings updated.');

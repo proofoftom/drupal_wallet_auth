@@ -128,6 +128,8 @@ class WalletLoginBlock extends BlockBase implements ContainerFactoryPluginInterf
           'projectName' => $config->get('project.name') ?? '',
           'projectLogo' => $config->get('project.logo') ?? '',
           'projectEntryTitle' => $config->get('project.entryTitle') ?? '',
+          // Button text.
+          'buttonText' => $config->get('button_text') ?? 'Sign In',
         ],
       ],
     ];

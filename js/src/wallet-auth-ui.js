@@ -22,6 +22,7 @@ Drupal.behaviors.walletAuth = {
   connector: null,
   state: "idle", // idle, signing, error, authenticated
   csrfToken: null, // Store CSRF token from nonce response
+  buttonText: "Sign In", // Configurable button text
 
   attach: function (context, settings) {
     // Only attach once using a simple flag
@@ -50,6 +51,9 @@ Drupal.behaviors.walletAuth = {
 
     // Initialize connector using namespaced class
     this.connector = new Drupal.walletAuth.WalletConnector(waapConfig);
+
+    // Get configurable button text
+    this.buttonText = config.buttonText || "Sign In";
 
     // Bind sign-in button
     var $loginButton = $(".wallet-auth-login-btn", context);
@@ -305,7 +309,7 @@ Drupal.behaviors.walletAuth = {
         $loginButton
           .prop("disabled", false)
           .find("span")
-          .text("Sign In");
+          .text(this.buttonText);
         $status.text("");
         break;
 

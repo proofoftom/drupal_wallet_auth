@@ -13,6 +13,7 @@ walletConnectProjectId: ''
 styles:
   darkMode: false
 showSecured: true
+button_text: 'Sign In'
 project:
   name: ''
   logo: ''
