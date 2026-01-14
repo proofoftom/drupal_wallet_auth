@@ -9,7 +9,6 @@ use Drupal\Core\Database\Connection;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
-use Drupal\wallet_auth\WalletVerificationInterface;
 use Elliptic\EC;
 use kornrunner\Keccak;
 use Symfony\Component\HttpFoundation\RequestStack;

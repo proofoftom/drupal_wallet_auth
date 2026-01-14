@@ -14,7 +14,7 @@ use Drupal\user\UserInterface;
 /**
  * Service for managing wallet-to-user mapping and user creation.
  */
-class WalletUserManager {
+class WalletUserManager implements WalletUserManagerInterface {
 
   /**
    * The database connection.

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Drupal\wallet_auth;
+namespace Drupal\wallet_auth\Service;
 
 /**
  * Interface for wallet signature verification and nonce management.
