@@ -1,0 +1,6 @@
+wallet_auth.settings:
+  title: 'Wallet authentication'
+  description: 'Configure wallet-based authentication settings'
+  route_name: wallet_auth.settings
+  parent: user.admin_index
+  weight: 10

@@ -1,0 +1,22 @@
+services:
+  wallet_auth.verification:
+    class: Drupal\wallet_auth\Service\WalletVerification
+    arguments:
+      - '@database'
+      - '@logger.factory'
+      - '@datetime.time'
+      - '@tempstore.private'
+      - '@config.factory'
+      - '@request_stack'
+  wallet_auth.user_manager:
+    class: Drupal\wallet_auth\Service\WalletUserManager
+    arguments:
+      - '@database'
+      - '@externalauth.externalauth'
+      - '@entity_type.manager'
+      - '@logger.factory'
+      - '@datetime.time'
+  wallet_auth.access_checker:
+    class: Drupal\wallet_auth\Access\WalletAuthAccessCheck
+    tags:
+      - { name: access_check, applies_to: _wallet_auth_access }

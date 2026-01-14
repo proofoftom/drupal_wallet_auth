@@ -1,0 +1,18 @@
+wallet_auth_connector:
+  version: 1.0.0
+  js:
+    js/dist/wallet-auth-connector.js: {}
+  dependencies:
+    - core/drupal
+    - core/drupalSettings
+
+wallet_auth_ui:
+  version: 1.0.0
+  js:
+    js/dist/wallet-auth-ui.js: {}
+  css:
+    component:
+      src/css/wallet-auth.css: {}
+  dependencies:
+    - wallet_auth/wallet_auth_connector
+    - core/jquery

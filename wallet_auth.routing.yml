@@ -1,0 +1,29 @@
+wallet_auth.authenticate:
+  path: '/wallet-auth/authenticate'
+  defaults:
+    _controller: '\Drupal\wallet_auth\Controller\AuthenticateController::authenticate'
+    _title: 'Wallet Authentication'
+  methods: [POST]
+  requirements:
+    _wallet_auth_access: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+
+wallet_auth.nonce:
+  path: '/wallet-auth/nonce'
+  defaults:
+    _controller: '\Drupal\wallet_auth\Controller\NonceController::generateNonce'
+    _title: 'Generate Authentication Nonce'
+  methods: [GET]
+  requirements:
+    _wallet_auth_access: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+
+wallet_auth.settings:
+  path: '/admin/config/people/wallet-auth'
+  defaults:
+    _form: '\Drupal\wallet_auth\Form\SettingsForm'
+    _title: 'Wallet authentication'
+  requirements:
+    _permission: 'administer site configuration'

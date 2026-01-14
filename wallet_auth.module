@@ -1,0 +1,34 @@
+<?php
+
+/**
+ * @file
+ * Contains wallet_auth.module.
+ *
+ * This module provides wallet-based authentication using Wallet as a Protocol.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function wallet_auth_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.wallet_auth':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('The Wallet Auth module provides wallet-based authentication using Wallet as a Protocol.') . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function wallet_auth_theme($existing, $type, $theme, $path) {
+  return [
+    'wallet_login_button' => [
+      'variables' => [],
+    ],
+  ];
+}

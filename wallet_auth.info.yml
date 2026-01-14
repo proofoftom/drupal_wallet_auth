@@ -1,0 +1,27 @@
+# Wallet Auth module information
+# Provides wallet-based authentication using Wallet as a Protocol
+
+# Human-readable name of the module (appears in admin interface)
+name: 'Wallet Auth'
+
+# Type: must be 'module' for Drupal modules
+type: module
+
+# Brief description of what the module does
+description: 'Wallet-based authentication using Wallet as a Protocol'
+
+# Drupal core version requirement: ^10 || ^11 means Drupal 10.x or 11.x
+core_version_requirement: ^10 || ^11
+
+# PHP version requirement
+php: 8.2
+
+# Package: Groups related modules together in the admin interface
+package: Web3
+
+# Dependencies
+dependencies:
+  - externalauth:externalauth
+
+# Configure path (link to settings form)
+configure: wallet_auth.settings
