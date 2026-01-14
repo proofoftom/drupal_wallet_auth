@@ -12,7 +12,7 @@ wallet_auth_ui:
     js/dist/wallet-auth-ui.js: {}
   css:
     component:
-      src/css/wallet-auth.css: {}
+      css/wallet-auth.css: {}
   dependencies:
     - wallet_auth/wallet_auth_connector
     - core/jquery

@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   build: {
     lib: {
-      entry: './src/js/wallet-auth-connector.js',
+      entry: './js/src/wallet-auth-connector.js',
       name: 'WalletAuthConnector',
       formats: ['iife'],
       fileName: 'wallet-auth-connector',
@@ -17,7 +17,7 @@ export default defineConfig({
 export default defineConfig({
   build: {
     lib: {
-      entry: './src/js/wallet-auth-ui.js',
+      entry: './js/src/wallet-auth-ui.js',
       name: 'WalletAuthUI',
       formats: ['iife'],
       fileName: 'wallet-auth-ui',

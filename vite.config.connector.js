@@ -16,7 +16,7 @@ export default defineConfig({
   ],
   build: {
     lib: {
-      entry: './src/js/wallet-auth-connector.js',
+      entry: './js/src/wallet-auth-connector.js',
       name: 'WalletAuthConnector',
       formats: ['iife'],
       fileName: (format) => `wallet-auth-connector.js`,
