@@ -45,28 +45,6 @@
 }
 
 /**
- * Disconnect button.
- */
-.wallet-auth-disconnect-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background-color: transparent;
-  color: #6c757d;
-  border: 1px solid #6c757d;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.wallet-auth-disconnect-btn:hover,
-.wallet-auth-disconnect-btn:focus {
-  background-color: #f8f9fa;
-}
-
-/**
  * Status text.
  */
 .wallet-auth-status {
@@ -97,11 +75,11 @@
 /**
  * State-specific styles.
  */
-[data-wallet-auth-state="connecting"] .wallet-auth-login-btn {
+[data-wallet-auth-state="signing"] .wallet-auth-login-btn {
   position: relative;
 }
 
-[data-wallet-auth-state="connecting"] .wallet-auth-login-btn::before {
+[data-wallet-auth-state="signing"] .wallet-auth-login-btn::before {
   content: '';
   position: absolute;
   left: 0.75rem;
@@ -113,7 +91,7 @@
   animation: wallet-auth-spin 0.6s linear infinite;
 }
 
-[data-wallet-auth-state="connecting"] .wallet-auth-login-btn span {
+[data-wallet-auth-state="signing"] .wallet-auth-login-btn span {
   padding-left: 1.5rem;
 }
 

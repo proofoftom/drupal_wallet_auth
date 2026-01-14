@@ -5,9 +5,6 @@ wallet_auth.settings:
     network:
       type: string
       label: 'Blockchain network'
-    enable_auto_connect:
-      type: boolean
-      label: 'Enable auto-connect'
     nonce_lifetime:
       type: integer
       label: 'Nonce lifetime (seconds)'

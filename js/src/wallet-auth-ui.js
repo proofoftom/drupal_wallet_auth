@@ -14,10 +14,13 @@ var walletAuthInitialized = false;
 
 /**
  * Wallet authentication behavior.
+ *
+ * Provides a single-click "Sign In" experience that handles the entire
+ * authentication flow: connect wallet (if needed) -> sign message -> authenticate.
  */
 Drupal.behaviors.walletAuth = {
   connector: null,
-  state: "idle", // idle, connecting, connected, signing, error
+  state: "idle", // idle, signing, error, authenticated
   csrfToken: null, // Store CSRF token from nonce response
 
   attach: function (context, settings) {
@@ -48,124 +51,108 @@ Drupal.behaviors.walletAuth = {
     // Initialize connector using namespaced class
     this.connector = new Drupal.walletAuth.WalletConnector(waapConfig);
 
-    // Bind login button
+    // Bind sign-in button
     var $loginButton = $(".wallet-auth-login-btn", context);
     $loginButton.on("click", function (e) {
       e.preventDefault();
-      self.handleLogin();
+      self.handleSignIn();
     });
 
-    // Bind disconnect button
-    var $disconnectButton = $(".wallet-auth-disconnect-btn", context);
-    $disconnectButton.on("click", function (e) {
-      e.preventDefault();
-      self.handleDisconnect();
-    });
-
-    // Initialize connector and check for existing session
+    // Initialize connector silently (no UI state change)
     this.connector
       .init()
       .then(function () {
-        return self.connector.checkSession();
-      })
-      .then(function (account) {
-        if (account) {
-          // User already authenticated with WaaP, but don't auto-login
-          // Just update UI to show connected state
-          self.setState("connected");
-          self.updateUI();
-        } else {
-          // Show login button
-          self.setState("idle");
-          self.updateUI();
-        }
+        // Ready state - button shows "Sign In"
+        self.setState("idle");
+        self.updateUI();
       })
       .catch(function (error) {
         console.error("Initialization error:", error);
         self.setState("error");
-        self.showError(error.message);
-      });
-
-    // Listen for disconnect events
-    this.connector.on("disconnect", function () {
-      self.setState("idle");
-      self.updateUI();
-    });
-
-    // Listen for account changes
-    this.connector.on("accountChanged", function (accounts) {
-      if (accounts.length > 0) {
-        // Account changed, but don't auto-authenticate
-        // Just update UI to show connected state
-        self.setState("connected");
-        self.updateUI();
-      } else {
-        self.setState("idle");
-        self.updateUI();
-      }
-    });
-  },
-
-  /**
-   * Handle login button click.
-   */
-  handleLogin: function () {
-    var self = this;
-
-    // Check if already connected to WaaP
-    var existingAddress = this.connector.getAddress();
-    if (existingAddress) {
-      // Already connected, proceed directly to authentication
-      console.log("Already connected to WaaP, proceeding to authentication");
-      this.authenticate(existingAddress);
-      return;
-    }
-
-    this.setState("connecting");
-
-    this.connector
-      .login()
-      .then(function (loginType) {
-        if (!loginType) {
-          // User cancelled
-          self.setState("idle");
-          return;
-        }
-
-        console.log("Logged in via:", loginType);
-        self.setState("connected");
-
-        // Proceed with authentication
-        var address = self.connector.getAddress();
-        self.authenticate(address);
-      })
-      .catch(function (error) {
-        console.error("Login error:", error);
-        self.setState("error");
-        self.showError(error.message);
+        self.showError("Failed to initialize wallet connection");
       });
   },
 
   /**
-   * Handle disconnect button click.
+   * Handle sign-in button click - unified single-click flow.
+   *
+   * This method handles the entire authentication process:
+   * 1. Check for existing wallet session (passive)
+   * 2. If no session, show WaaP login modal
+   * 3. Once wallet connected, proceed with signature flow
+   * 4. Complete Drupal authentication
    */
-  handleDisconnect: function () {
-    this.connector.logout();
-    this.setState("idle");
-    this.updateUI();
-  },
-
-  /**
-   * Complete authentication flow: fetch nonce, sign, verify.
-   */
-  authenticate: function (address) {
+  handleSignIn: function () {
     var self = this;
 
     this.setState("signing");
     this.updateUI();
 
+    // Step 1: Check for existing wallet session (passive check)
+    this.connector
+      .checkSession()
+      .then(function (existingAccount) {
+        if (existingAccount) {
+          // Wallet already connected, proceed to authentication
+          console.log("Using existing wallet session:", existingAccount);
+          return existingAccount;
+        }
+
+        // Step 2: No existing session - show WaaP login modal
+        return self.connector.login().then(function (loginType) {
+          if (!loginType) {
+            // User cancelled the modal
+            throw { cancelled: true };
+          }
+          console.log("Logged in via:", loginType);
+          return self.connector.getAddress();
+        });
+      })
+      .then(function (address) {
+        // Step 3: Proceed with Drupal authentication
+        return self.performAuthentication(address);
+      })
+      .catch(function (error) {
+        if (error && error.cancelled) {
+          // User cancelled - reset to idle state
+          self.setState("idle");
+          self.updateUI();
+          return;
+        }
+
+        console.error("Sign-in error:", error);
+
+        // Check if user rejected the signature request
+        if (
+          (error.message && error.message.includes("User rejected")) ||
+          (error.message && error.message.includes("user rejected")) ||
+          error.code === 4001
+        ) {
+          self.setState("idle");
+          self.updateUI();
+          self.showError("Signature request was cancelled. Please try again.");
+        } else {
+          self.setState("error");
+          self.updateUI();
+          self.showError(error.message || "Sign-in failed");
+        }
+      });
+  },
+
+  /**
+   * Complete authentication flow: fetch nonce, sign, verify.
+   *
+   * @param {string} address
+   *   The wallet address to authenticate.
+   *
+   * @return {Promise}
+   *   Promise that resolves on successful authentication.
+   */
+  performAuthentication: function (address) {
+    var self = this;
+
     // Step 1: Fetch nonce from backend
-    this.fetchNonce(address)
+    return this.fetchNonce(address)
       .then(function (data) {
         var nonce = data.nonce;
         self.connector.lastNonce = nonce;
@@ -194,8 +181,8 @@ Drupal.behaviors.walletAuth = {
         if (response.success) {
           // Authentication successful
           self.setState("authenticated");
-          self.showSuccess("Logged in as " + response.username);
-          // Optionally redirect or update page
+          self.showSuccess("Signed in as " + response.username);
+          // Redirect
           if (drupalSettings.walletAuth.redirectOnSuccess) {
             window.location.href = drupalSettings.walletAuth.redirectOnSuccess;
           } else {
@@ -203,26 +190,6 @@ Drupal.behaviors.walletAuth = {
           }
         } else {
           throw new Error(response.error || "Authentication failed");
-        }
-      })
-      .catch(function (error) {
-        console.error("Authentication error:", error);
-
-        // Check if user rejected the request
-        if (
-          (error.message && error.message.includes("User rejected")) ||
-          (error.message && error.message.includes("user rejected")) ||
-          error.code === 4001
-        ) {
-          // User cancelled - reset to connected state so they can try again
-          self.setState("connected");
-          self.updateUI();
-          self.showError("Signature request was cancelled. Please try again.");
-        } else {
-          // Actual error
-          self.setState("error");
-          self.updateUI();
-          self.showError(error.message || "Authentication failed");
         }
       });
   },
@@ -321,69 +288,49 @@ Drupal.behaviors.walletAuth = {
 
   /**
    * Update UI based on current state.
+   *
+   * States:
+   * - idle: Ready to sign in, button shows "Sign In"
+   * - signing: Authentication in progress, button disabled
+   * - authenticated: Success, redirecting
+   * - error: Failed, button shows "Try Again"
    */
   updateUI: function () {
     var $ = jQuery;
-    var $container = $(".wallet-auth-container");
     var $loginButton = $(".wallet-auth-login-btn");
-    var $disconnectButton = $(".wallet-auth-disconnect-btn");
     var $status = $(".wallet-auth-status");
-
-    // Hide all by default
-    $loginButton.addClass("visually-hidden");
-    $disconnectButton.addClass("visually-hidden");
 
     switch (this.state) {
       case "idle":
         $loginButton
-          .removeClass("visually-hidden")
-          .find("span")
-          .text("Connect Wallet");
-        $status.text("Connect your wallet to login");
-        break;
-
-      case "connecting":
-        $loginButton
-          .removeClass("visually-hidden")
-          .prop("disabled", true)
-          .find("span")
-          .text("Connecting...");
-        $status.text("Connecting to wallet...");
-        break;
-
-      case "connected":
-        // When connected but not authenticated, show both sign-in and disconnect
-        $loginButton
-          .removeClass("visually-hidden")
           .prop("disabled", false)
           .find("span")
-          .text("Sign in");
-        $disconnectButton.removeClass("visually-hidden");
-        $status.text(
-          "Connected: " + this.formatAddress(this.connector.getAddress())
-        );
+          .text("Sign In");
+        $status.text("");
         break;
 
       case "signing":
         $loginButton
-          .removeClass("visually-hidden")
           .prop("disabled", true)
           .find("span")
-          .text("Signing...");
-        $status.text("Please sign the message in your wallet...");
+          .text("Signing in...");
+        $status.text("Please complete the sign-in in your wallet...");
         break;
 
       case "authenticated":
+        $loginButton
+          .prop("disabled", true)
+          .find("span")
+          .text("Signed In");
         $status.text("Authentication successful!");
         break;
 
       case "error":
         $loginButton
-          .removeClass("visually-hidden")
           .prop("disabled", false)
           .find("span")
           .text("Try Again");
-        $status.text("Authentication failed. Please try again.");
+        $status.text("Sign-in failed. Please try again.");
         break;
     }
   },

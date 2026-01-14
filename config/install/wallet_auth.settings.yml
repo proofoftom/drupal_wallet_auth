@@ -1,5 +1,4 @@
 network: 'mainnet'
-enable_auto_connect: true
 nonce_lifetime: 300
 authentication_methods:
   - email

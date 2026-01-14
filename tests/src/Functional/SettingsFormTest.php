@@ -95,8 +95,6 @@ class SettingsFormTest extends BrowserTestBase {
     $mapping = $schema['mapping'];
     $this->assertArrayHasKey('network', $mapping);
     $this->assertArrayHasKey('nonce_lifetime', $mapping);
-    // enable_auto_connect is the schema key.
-    $this->assertArrayHasKey('enable_auto_connect', $mapping);
   }
 
   /**
@@ -109,10 +107,6 @@ class SettingsFormTest extends BrowserTestBase {
     $network = $config->get('network');
     $this->assertNotNull($network);
     $this->assertIsString($network);
-
-    // Auto_connect may be null or boolean.
-    $autoConnect = $config->get('enable_auto_connect');
-    $this->assertTrue(is_bool($autoConnect) || is_null($autoConnect));
 
     // Nonce lifetime should be set or have a default.
     $nonceLifetime = $config->get('nonce_lifetime');
@@ -134,23 +128,6 @@ class SettingsFormTest extends BrowserTestBase {
     $config->set('network', 'mainnet')->save();
     $savedConfig = \Drupal::config('wallet_auth.settings');
     $this->assertEquals('mainnet', $savedConfig->get('network'));
-  }
-
-  /**
-   * Tests auto_connect configuration option.
-   */
-  public function testAutoConnectConfiguration(): void {
-    $config = \Drupal::configFactory()->getEditable('wallet_auth.settings');
-
-    // Test setting enable_auto_connect (schema name).
-    $config->set('enable_auto_connect', TRUE)->save();
-    $savedConfig = \Drupal::config('wallet_auth.settings');
-    $this->assertTrue($savedConfig->get('enable_auto_connect'));
-
-    // Reset to default.
-    $config->set('enable_auto_connect', FALSE)->save();
-    $savedConfig = \Drupal::config('wallet_auth.settings');
-    $this->assertFalse($savedConfig->get('enable_auto_connect'));
   }
 
   /**

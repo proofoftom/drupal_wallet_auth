@@ -118,7 +118,6 @@ class WalletLoginBlock extends BlockBase implements ContainerFactoryPluginInterf
           'apiEndpoint' => '/wallet-auth',
           'network' => $network,
           'chainId' => $this->getChainId($network),
-          'enableAutoConnect' => $config->get('enable_auto_connect') ?? TRUE,
           'authenticationMethods' => $config->get('authentication_methods') ?? ['email', 'social'],
           'allowedSocials' => $config->get('allowed_socials') ?? ['google', 'twitter', 'discord', 'bluesky'],
           'redirectOnSuccess' => $config->get('redirect_on_success') ?? '/user',

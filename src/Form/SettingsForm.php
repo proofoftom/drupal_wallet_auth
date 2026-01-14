@@ -129,13 +129,6 @@ class SettingsForm extends ConfigFormBase {
       '#required' => TRUE,
     ];
 
-    $form['basic_settings']['enable_auto_connect'] = [
-      '#type' => 'checkbox',
-      '#title' => $this->t('Enable auto-connect'),
-      '#description' => $this->t('Automatically attempt to connect the wallet when the block is loaded.'),
-      '#default_value' => $config->get('enable_auto_connect') ?? TRUE,
-    ];
-
     $form['basic_settings']['nonce_lifetime'] = [
       '#type' => 'number',
       '#title' => $this->t('Authentication timeout'),
@@ -327,7 +320,6 @@ class SettingsForm extends ConfigFormBase {
 
     $this->config('wallet_auth.settings')
       ->set('network', $form_state->getValue('network'))
-      ->set('enable_auto_connect', (bool) $form_state->getValue('enable_auto_connect'))
       ->set('nonce_lifetime', (int) $form_state->getValue('nonce_lifetime'))
       ->set('authentication_methods', array_values($authentication_methods))
       ->set('allowed_socials', array_values($allowed_socials))
