@@ -11,3 +11,18 @@ wallet_auth.settings:
     nonce_lifetime:
       type: integer
       label: 'Nonce lifetime (seconds)'
+    authentication_methods:
+      type: sequence
+      label: 'Authentication methods'
+      sequence:
+        type: string
+        label: 'Method'
+    allowed_socials:
+      type: sequence
+      label: 'Allowed social providers'
+      sequence:
+        type: string
+        label: 'Social provider'
+    redirect_on_success:
+      type: string
+      label: 'Redirect path after successful login'

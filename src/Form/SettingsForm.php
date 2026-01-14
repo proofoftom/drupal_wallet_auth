@@ -101,6 +101,46 @@ class SettingsForm extends ConfigFormBase {
       '#field_suffix' => $this->t('seconds'),
     ];
 
+    $form['authentication_methods'] = [
+      '#type' => 'checkboxes',
+      '#title' => $this->t('Authentication methods'),
+      '#description' => $this->t('Select which authentication methods to display.'),
+      '#options' => [
+        'email' => $this->t('Email'),
+        'social' => $this->t('Social'),
+      ],
+      '#default_value' => $config->get('authentication_methods') ?? ['email', 'social'],
+      '#required' => TRUE,
+    ];
+
+    $form['allowed_socials'] = [
+      '#type' => 'checkboxes',
+      '#title' => $this->t('Allowed social providers'),
+      '#description' => $this->t('Select which social providers to allow.'),
+      '#options' => [
+        'google' => $this->t('Google'),
+        'twitter' => $this->t('Twitter/X'),
+        'discord' => $this->t('Discord'),
+        'bluesky' => $this->t('Bluesky'),
+      ],
+      '#default_value' => $config->get('allowed_socials') ?? ['google', 'twitter', 'discord', 'bluesky'],
+      '#required' => TRUE,
+      '#states' => [
+        'visible' => [
+          ':input[name="authentication_methods[social]"]' => ['checked' => TRUE],
+        ],
+      ],
+    ];
+
+    $form['redirect_on_success'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Redirect path after login'),
+      '#description' => $this->t('The internal Drupal path to redirect to after successful authentication (e.g., /user or /dashboard).'),
+      '#default_value' => $config->get('redirect_on_success') ?? '/user',
+      '#required' => TRUE,
+      '#field_prefix' => '/',
+    ];
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -108,10 +148,17 @@ class SettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    // Filter out unchecked values from checkboxes.
+    $authentication_methods = array_filter($form_state->getValue('authentication_methods'));
+    $allowed_socials = array_filter($form_state->getValue('allowed_socials'));
+
     $this->config('wallet_auth.settings')
       ->set('network', $form_state->getValue('network'))
       ->set('enable_auto_connect', $form_state->getValue('enable_auto_connect'))
       ->set('nonce_lifetime', (int) $form_state->getValue('nonce_lifetime'))
+      ->set('authentication_methods', array_values($authentication_methods))
+      ->set('allowed_socials', array_values($allowed_socials))
+      ->set('redirect_on_success', $form_state->getValue('redirect_on_success'))
       ->save();
 
     $this->logger->info('Wallet authentication settings updated.');

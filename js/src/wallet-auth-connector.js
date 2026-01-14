@@ -3,10 +3,10 @@
  * WaaP SDK wrapper for wallet authentication.
  */
 
-import { initWaaP } from '@human.tech/waap-sdk';
+import { initWaaP } from "@human.tech/waap-sdk";
 
 (function () {
-  'use strict';
+  "use strict";
 
   /**
    * Wallet connector service.
@@ -15,11 +15,7 @@ import { initWaaP } from '@human.tech/waap-sdk';
    */
   class WalletConnector {
     constructor(config = {}) {
-      this.config = {
-        authenticationMethods: ['email', 'social'],
-        allowedSocials: ['google', 'twitter', 'discord'],
-        ...config,
-      };
+      this.config = config;
       this.provider = null;
       this.account = null;
       this.chainId = null;
@@ -48,15 +44,15 @@ import { initWaaP } from '@human.tech/waap-sdk';
         this.provider = window.waap;
 
         if (!this.provider) {
-          throw new Error('WaaP provider not available after initialization');
+          throw new Error("WaaP provider not available after initialization");
         }
 
         // Set up event listeners
         this.attachEventListeners();
 
-        console.log('WaaP SDK initialized successfully');
+        console.log("WaaP SDK initialized successfully");
       } catch (error) {
-        console.error('Failed to initialize WaaP SDK:', error);
+        console.error("Failed to initialize WaaP SDK:", error);
         throw error;
       }
     }
@@ -68,37 +64,37 @@ import { initWaaP } from '@human.tech/waap-sdk';
       if (!this.provider) return;
 
       // Connect event
-      this.provider.on('connect', (connectInfo) => {
+      this.provider.on("connect", (connectInfo) => {
         this.chainId = connectInfo.chainId;
-        this.notifyListeners('connect', connectInfo);
-        console.log('Wallet connected:', connectInfo);
+        this.notifyListeners("connect", connectInfo);
+        console.log("Wallet connected:", connectInfo);
       });
 
       // Disconnect event
-      this.provider.on('disconnect', (error) => {
+      this.provider.on("disconnect", (error) => {
         this.account = null;
         this.chainId = null;
-        this.notifyListeners('disconnect', error);
-        console.log('Wallet disconnected:', error);
+        this.notifyListeners("disconnect", error);
+        console.log("Wallet disconnected:", error);
       });
 
       // Account changed event
-      this.provider.on('accountsChanged', (accounts) => {
+      this.provider.on("accountsChanged", (accounts) => {
         if (accounts.length === 0) {
           // User disconnected wallet
           this.account = null;
-          this.notifyListeners('disconnect', null);
+          this.notifyListeners("disconnect", null);
         } else {
           this.account = accounts[0];
-          this.notifyListeners('accountChanged', accounts);
+          this.notifyListeners("accountChanged", accounts);
         }
-        console.log('Accounts changed:', accounts);
+        console.log("Accounts changed:", accounts);
       });
 
       // Chain changed event
-      this.provider.on('chainChanged', (chainId) => {
+      this.provider.on("chainChanged", (chainId) => {
         this.chainId = chainId;
-        this.notifyListeners('chainChanged', chainId);
+        this.notifyListeners("chainChanged", chainId);
         // Recommended: reload page on chain change
         window.location.reload();
       });
@@ -116,19 +112,19 @@ import { initWaaP } from '@human.tech/waap-sdk';
 
       try {
         const accounts = await this.provider.request({
-          method: 'eth_requestAccounts',
+          method: "eth_requestAccounts",
         });
 
         if (accounts && accounts.length > 0) {
           this.account = accounts[0];
-          console.log('Auto-connected with existing session:', this.account);
+          console.log("Auto-connected with existing session:", this.account);
           return this.account;
         }
 
         return null;
       } catch (error) {
         // No existing session or user rejected
-        console.log('No existing session found');
+        console.log("No existing session found");
         return null;
       }
     }
@@ -145,19 +141,19 @@ import { initWaaP } from '@human.tech/waap-sdk';
 
       try {
         const loginType = await this.provider.login();
-        console.log('Login type:', loginType);
+        console.log("Login type:", loginType);
 
         if (loginType) {
           // Get accounts after login
           const accounts = await this.provider.request({
-            method: 'eth_requestAccounts',
+            method: "eth_requestAccounts",
           });
           this.account = accounts[0];
         }
 
         return loginType;
       } catch (error) {
-        console.error('Login failed:', error);
+        console.error("Login failed:", error);
         throw error;
       }
     }
@@ -173,19 +169,19 @@ import { initWaaP } from '@human.tech/waap-sdk';
      */
     async signMessage(message) {
       if (!this.provider || !this.account) {
-        throw new Error('Wallet not connected');
+        throw new Error("Wallet not connected");
       }
 
       try {
         const signature = await this.provider.request({
-          method: 'personal_sign',
+          method: "personal_sign",
           params: [message, this.account],
         });
 
-        console.log('Message signed successfully');
+        console.log("Message signed successfully");
         return signature;
       } catch (error) {
-        console.error('Message signing failed:', error);
+        console.error("Message signing failed:", error);
         throw error;
       }
     }
@@ -238,7 +234,7 @@ import { initWaaP } from '@human.tech/waap-sdk';
      */
     notifyListeners(event, data) {
       if (!this.listeners.has(event)) return;
-      this.listeners.get(event).forEach(callback => callback(data));
+      this.listeners.get(event).forEach((callback) => callback(data));
     }
 
     /**
@@ -251,9 +247,9 @@ import { initWaaP } from '@human.tech/waap-sdk';
         await this.provider.logout();
         this.account = null;
         this.chainId = null;
-        console.log('Logged out successfully');
+        console.log("Logged out successfully");
       } catch (error) {
-        console.error('Logout failed:', error);
+        console.error("Logout failed:", error);
       }
     }
 
@@ -273,13 +269,14 @@ import { initWaaP } from '@human.tech/waap-sdk';
 
   // Create namespaced Drupal object for wallet auth
   // Access Drupal from global window object
-  if (typeof window.Drupal !== 'undefined') {
+  if (typeof window.Drupal !== "undefined") {
     window.Drupal.walletAuth = window.Drupal.walletAuth || {};
 
     // Expose WalletConnector class through Drupal namespace
     window.Drupal.walletAuth.WalletConnector = WalletConnector;
   } else {
-    console.error('Drupal is not available. WalletConnector cannot be initialized.');
+    console.error(
+      "Drupal is not available. WalletConnector cannot be initialized."
+    );
   }
-
 })();
