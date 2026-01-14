@@ -86,4 +86,14 @@ function wallet_auth_install() {
 function wallet_auth_uninstall() {
   // The schema is automatically uninstalled by Drupal when the module is disabled.
   // This hook is provided for any additional cleanup tasks.
+
+  // Clean up uploaded logo files.
+  $config = \Drupal::config('wallet_auth.settings');
+  $logo_fid = $config->get('project.logo_fid');
+  if ($logo_fid) {
+    $file = \Drupal::entityTypeManager()->getStorage('file')->load($logo_fid);
+    if ($file) {
+      $file->delete();
+    }
+  }
 }

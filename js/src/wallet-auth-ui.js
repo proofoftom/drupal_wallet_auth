@@ -37,9 +37,16 @@ Drupal.behaviors.walletAuth = {
 
     // Get configuration from drupalSettings
     var config = settings.walletAuth || {};
+    var waapConfig = config.waapConfig || {};
+
+    // Add additional branding data to waapConfig
+    waapConfig.projectName = config.projectName || '';
+    waapConfig.projectLogo = config.projectLogo || '';
+    waapConfig.projectEntryTitle = config.projectEntryTitle || '';
+    waapConfig.walletConnectProjectId = config.walletConnectProjectId || '';
 
     // Initialize connector using namespaced class
-    this.connector = new Drupal.walletAuth.WalletConnector(config);
+    this.connector = new Drupal.walletAuth.WalletConnector(waapConfig);
 
     // Bind login button
     var $loginButton = $(".wallet-auth-login-btn", context);

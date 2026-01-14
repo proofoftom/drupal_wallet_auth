@@ -1,3 +1,21 @@
 network: 'mainnet'
 enable_auto_connect: true
 nonce_lifetime: 300
+authentication_methods:
+  - email
+  - social
+allowed_socials:
+  - google
+  - twitter
+  - discord
+  - bluesky
+redirect_on_success: '/user'
+walletConnectProjectId: ''
+styles:
+  darkMode: false
+showSecured: true
+project:
+  name: ''
+  logo: ''
+  logo_fid: null
+  entryTitle: ''

@@ -26,3 +26,32 @@ wallet_auth.settings:
     redirect_on_success:
       type: string
       label: 'Redirect path after successful login'
+    walletConnectProjectId:
+      type: string
+      label: 'WalletConnect Project ID'
+    styles:
+      type: mapping
+      label: 'UI style settings'
+      mapping:
+        darkMode:
+          type: boolean
+          label: 'Enable dark mode'
+    showSecured:
+      type: boolean
+      label: 'Show secured by human.tech badge'
+    project:
+      type: mapping
+      label: 'Project branding'
+      mapping:
+        name:
+          type: string
+          label: 'Project name'
+        logo:
+          type: string
+          label: 'Project logo (base64)'
+        logo_fid:
+          type: integer
+          label: 'Logo file ID'
+        entryTitle:
+          type: string
+          label: 'Welcome message'

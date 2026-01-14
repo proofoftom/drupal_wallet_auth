@@ -91,6 +91,23 @@ class WalletLoginBlock extends BlockBase implements ContainerFactoryPluginInterf
     $config = $this->configFactory->get('wallet_auth.settings');
     $network = $config->get('network') ?? 'mainnet';
 
+    // Build WaaP config object for the SDK.
+    $waapConfig = [
+      'allowedSocials' => $config->get('allowed_socials') ?? ['google', 'twitter', 'discord', 'bluesky'],
+      'authenticationMethods' => $config->get('authentication_methods') ?? ['email', 'social'],
+    ];
+
+    // Add styles if configured.
+    $darkMode = $config->get('styles.darkMode');
+    if ($darkMode !== NULL) {
+      $waapConfig['styles'] = ['darkMode' => $darkMode];
+    }
+
+    // Add showSecured if explicitly set to false.
+    if ($config->get('showSecured') === FALSE) {
+      $waapConfig['showSecured'] = FALSE;
+    }
+
     $build['#theme'] = 'wallet_login_button';
     $build['#attached'] = [
       'library' => [
@@ -105,6 +122,13 @@ class WalletLoginBlock extends BlockBase implements ContainerFactoryPluginInterf
           'authenticationMethods' => $config->get('authentication_methods') ?? ['email', 'social'],
           'allowedSocials' => $config->get('allowed_socials') ?? ['google', 'twitter', 'discord', 'bluesky'],
           'redirectOnSuccess' => $config->get('redirect_on_success') ?? '/user',
+          // WaaP SDK config.
+          'waapConfig' => $waapConfig,
+          'walletConnectProjectId' => $config->get('walletConnectProjectId') ?? '',
+          // Project branding.
+          'projectName' => $config->get('project.name') ?? '',
+          'projectLogo' => $config->get('project.logo') ?? '',
+          'projectEntryTitle' => $config->get('project.entryTitle') ?? '',
         ],
       ],
     ];

@@ -34,11 +34,39 @@ import { initWaaP } from "@human.tech/waap-sdk";
       }
 
       try {
-        // Initialize WaaP SDK
-        initWaaP({
-          config: this.config,
+        // Build initWaaP options
+        const initOptions = {
+          config: {
+            allowedSocials: this.config.allowedSocials || [],
+            authenticationMethods: this.config.authenticationMethods || [],
+            ...(this.config.styles ? { styles: this.config.styles } : {}),
+            ...(this.config.showSecured !== undefined ? { showSecured: this.config.showSecured } : {}),
+          },
           useStaging: false,
-        });
+        };
+
+        // Add walletConnectProjectId if configured
+        if (this.config.walletConnectProjectId) {
+          initOptions.walletConnectProjectId = this.config.walletConnectProjectId;
+        }
+
+        // Add project branding if configured
+        const project = {};
+        if (this.config.projectName) {
+          project.name = this.config.projectName;
+        }
+        if (this.config.projectLogo) {
+          project.logo = this.config.projectLogo;
+        }
+        if (this.config.projectEntryTitle) {
+          project.entryTitle = this.config.projectEntryTitle;
+        }
+        if (Object.keys(project).length > 0) {
+          initOptions.project = project;
+        }
+
+        // Initialize WaaP SDK
+        initWaaP(initOptions);
 
         // Get provider
         this.provider = window.waap;
