@@ -42,10 +42,10 @@ use Drupal\user\EntityOwnerTrait;
  *     "owner" = "uid",
  *   },
  *   links = {
- *     "collection" = "/admin/config/people/wallet-auth/addresses",
- *     "canonical" = "/admin/config/people/wallet-auth/addresses/{wallet_address}",
- *     "edit-form" = "/admin/config/people/wallet-auth/addresses/{wallet_address}/edit",
- *     "delete-form" = "/admin/config/people/wallet-auth/addresses/{wallet_address}/delete",
+ *     "collection" = "/admin/people/wallets",
+ *     "canonical" = "/admin/people/wallets/{wallet_address}",
+ *     "edit-form" = "/admin/people/wallets/{wallet_address}/edit",
+ *     "delete-form" = "/admin/people/wallets/{wallet_address}/delete",
  *   },
  *   admin_permission = "administer wallet addresses",
  * )
