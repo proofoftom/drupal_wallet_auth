@@ -122,11 +122,9 @@ class WalletUserManager implements WalletUserManagerInterface {
       $user = $wallet->getOwner();
 
       // Handle orphaned wallets where user was deleted.
+      // Return NULL to allow reassignment to new user.
+      // The linkWalletToUser() method will handle reassigning this wallet.
       if (!$user || !$user->id()) {
-        $this->logger->notice('Cleaning up orphaned wallet @wallet (user deleted)', [
-          '@wallet' => $walletAddress,
-        ]);
-        $wallet->delete();
         return NULL;
       }
 

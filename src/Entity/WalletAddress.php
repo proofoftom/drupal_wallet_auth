@@ -27,7 +27,8 @@ use Drupal\user\EntityOwnerTrait;
  *     "list_builder" = "Drupal\wallet_auth\WalletAddressListBuilder",
  *     "access" = "Drupal\Core\Entity\EntityAccessControlHandler",
  *     "form" = {
- *       "default" = "Drupal\Core\Entity\ContentEntityForm",
+ *       "default" = "Drupal\wallet_auth\Form\WalletAddressForm",
+ *       "edit" = "Drupal\wallet_auth\Form\WalletAddressForm",
  *       "delete" = "Drupal\Core\Entity\ContentEntityDeleteForm",
  *     },
  *     "route_provider" = {

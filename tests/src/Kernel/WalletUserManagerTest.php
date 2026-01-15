@@ -44,6 +44,7 @@ class WalletUserManagerTest extends KernelTestBase {
     $this->installEntitySchema('user');
     $this->installEntitySchema('wallet_address');
     $this->installSchema('externalauth', ['authmap']);
+    $this->installSchema('user', ['users_data']);
 
     $this->walletUserManager = $this->container->get('wallet_auth.user_manager');
 
@@ -591,6 +592,47 @@ class WalletUserManagerTest extends KernelTestBase {
     $this->assertEquals($initialTime, $firstLastUsed);
     $this->assertEquals($laterTime, $secondLastUsed);
     $this->assertGreaterThan($firstLastUsed, $secondLastUsed);
+  }
+
+  /**
+   * Tests that orphaned wallet is reassigned to new user.
+   */
+  public function testOrphanedWalletReassignedToNewUser(): void {
+    $walletAddress = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
+
+    // Create first user and link wallet.
+    $user1 = $this->walletUserManager->createUserFromWallet($walletAddress);
+
+    // Get the wallet entity's created timestamp and ID.
+    $wallets = $this->container->get('entity_type.manager')
+      ->getStorage('wallet_address')
+      ->loadByProperties(['wallet_address' => $walletAddress]);
+    $wallet = reset($wallets);
+    $originalCreated = $wallet->getCreatedTime();
+    $originalId = $wallet->id();
+
+    // Delete the first user (orphaning the wallet).
+    $user1->delete();
+
+    // Verify loadUserByWalletAddress returns NULL for orphaned wallet.
+    $loadedUser = $this->walletUserManager->loadUserByWalletAddress($walletAddress);
+    $this->assertNull($loadedUser);
+
+    // Login with same wallet - should create new user and reassign existing wallet.
+    $user2 = $this->walletUserManager->loginOrCreateUser($walletAddress);
+
+    // Verify new user was created.
+    $this->assertNotEquals($user1->id(), $user2->id());
+
+    // Verify wallet was reassigned (same entity, not recreated).
+    $wallets = $this->container->get('entity_type.manager')
+      ->getStorage('wallet_address')
+      ->loadByProperties(['wallet_address' => $walletAddress]);
+    $wallet = reset($wallets);
+
+    $this->assertEquals($user2->id(), $wallet->getOwnerId());
+    $this->assertEquals($originalId, $wallet->id(), 'Wallet entity ID should be preserved');
+    $this->assertEquals($originalCreated, $wallet->getCreatedTime(), 'Wallet created timestamp should be preserved');
   }
 
 }
