@@ -2,7 +2,12 @@
 
 ## Module Purpose
 
-Drupal 10+ module providing Ethereum wallet-based authentication using Sign-In with Ethereum (SIWE/EIP-4361) and EIP-191 personal_sign. Allows users to authenticate to Drupal using cryptographic signatures from browser wallets (MetaMask, WalletConnect, etc.) instead of passwords.
+Drupal 10+ module providing Ethereum wallet-based authentication using [Wallet as a Protocol (WaaP)](https://docs.wallet.human.tech/) and Sign-In with Ethereum (SIWE/EIP-4361). Allows users to authenticate to Drupal using cryptographic signatures from social logins or browser wallets (MetaMask, WalletConnect, etc.) instead of passwords.
+
+**Key Technologies:**
+- [Wallet as a Protocol (WaaP)](https://docs.wallet.human.tech/) - Universal wallet access without browser extensions
+- [Sign-In with Ethereum (EIP-4361)](https://eips.ethereum.org/EIPS/eip-4361) - Standardized message signing for authentication
+- [EIP-191 personal_sign](https://eips.ethereum.org/EIPS/eip-191) - Signed data for off-chain authentication
 
 ## Key Services
 
@@ -76,6 +81,7 @@ wallet_auth/
 ├── wallet_auth.services.yml
 ├── wallet_auth.routing.yml
 ├── wallet_auth.links.menu.yml            # Menu link definitions
+├── wallet_auth.links.task.yml            # Local task definitions
 ├── wallet_auth.module                    # Hooks (preprocess, page_attachments)
 ├── wallet_auth.install                   # Database schema
 └── wallet_auth.libraries.yml
@@ -90,6 +96,82 @@ wallet_auth/
 - `created` (int) - Unix timestamp
 - `last_used` (int) - Unix timestamp
 - `status` (tinyint) - 1=active, 0=disabled
+
+## Managing Wallet Addresses
+
+Administrators can manage wallet addresses via the local task tab at:
+
+- **URL**: `/admin/people/wallets`
+- **Tab title**: "Wallets"
+- **Base route**: `entity.user.collection` (People page)
+
+The Wallet Addresses listing is now a local task tab on the People administration page, appearing alongside "List", "Permissions", and "Roles".
+
+**Related Routes:**
+- Collection: `/admin/people/wallets`
+- View: `/admin/people/wallets/{wallet_address}`
+- Edit: `/admin/people/wallets/{wallet_address}/edit`
+- Delete: `/admin/people/wallets/{wallet_address}/delete`
+
+**Features:**
+- View all wallet addresses linked to user accounts
+- Edit wallet address ownership
+- Reassign orphaned wallets to different users (when a user account is deleted)
+- Enable/disable wallet addresses
+
+## REST API
+
+### POST /wallet-auth/authenticate
+
+Authenticate a user using their wallet signature.
+
+**Request:**
+
+```json
+{
+  "wallet_address": "0x...",
+  "signature": "0x...",
+  "message": "Sign this message to authenticate...",
+  "nonce": "base64encodednonce..."
+}
+```
+
+**Response (Success):**
+
+```json
+{
+  "success": true,
+  "uid": 123,
+  "username": "wallet_0x1234abcd"
+}
+```
+
+**Response (Error):**
+
+```json
+{
+  "success": false,
+  "error": "Invalid signature"
+}
+```
+
+**Status Codes:**
+- `200` - Authentication successful
+- `400` - Invalid request (bad address, expired nonce)
+- `401` - Invalid signature
+- `500` - Server error
+
+### GET /wallet-auth/nonce
+
+Get a nonce for signing.
+
+**Response:**
+
+```json
+{
+  "nonce": "base64encodednonce..."
+}
+```
 
 ## Development Commands
 
@@ -147,7 +229,7 @@ Builds two bundles via Vite:
 - `simplito/elliptic-php` - Elliptic curve cryptography (secp256k1)
 
 ### JavaScript (via npm)
-- `@human.tech/waap-sdk` - Wallet as a Protocol SDK
+- [`@human.tech/waap-sdk`](https://docs.wallet.human.tech/) - Wallet as a Protocol SDK
 - `vite` - Build tool
 - `vite-plugin-node-polyfills` - Node.js polyfills for browser
 
@@ -185,30 +267,8 @@ Admin settings at `/admin/config/people/wallet-auth`:
 - Nonce lifetime (60-3600 seconds)
 - WaaP SDK options (authentication methods, allowed socials, dark mode)
 
-## REST API Endpoints
-
-### GET /wallet-auth/nonce
-Returns: `{"nonce": "base64encodednonce..."}`
-
-### POST /wallet-auth/authenticate
-Request body:
-```json
-{
-  "wallet_address": "0x...",
-  "signature": "0x...",
-  "message": "Sign this message...",
-  "nonce": "base64nonce..."
-}
-```
-
-Response:
-```json
-{
-  "success": true,
-  "uid": 123,
-  "username": "wallet_0x1234abcd"
-}
-```
+**Wallet Addresses Management:**
+- Manage wallet addresses at `/admin/people/wallets` (People → Wallets tab)
 
 ## Common Tasks
 
