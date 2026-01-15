@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Drupal\Tests\wallet_auth\Kernel;
 
 use Drupal\Component\Datetime\TimeInterface;
-use Drupal\Core\Database\Database;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\user\Entity\User;
 use Drupal\wallet_auth\Service\WalletUserManager;
+use Drupal\wallet_auth\Entity\WalletAddress;
 
 /**
  * Tests wallet user management service.
@@ -42,7 +42,7 @@ class WalletUserManagerTest extends KernelTestBase {
     parent::setUp();
 
     $this->installEntitySchema('user');
-    $this->installSchema('wallet_auth', ['wallet_auth_wallet_address']);
+    $this->installEntitySchema('wallet_address');
     $this->installSchema('externalauth', ['authmap']);
 
     $this->walletUserManager = $this->container->get('wallet_auth.user_manager');
@@ -83,8 +83,12 @@ class WalletUserManagerTest extends KernelTestBase {
       }
     }
 
-    // Clear wallet address table.
-    $this->container->get('database')->truncate('wallet_auth_wallet_address')->execute();
+    // Delete all wallet address entities.
+    $wallets = WalletAddress::loadMultiple();
+    foreach ($wallets as $wallet) {
+      $wallet->delete();
+    }
+
     // Clear authmap table.
     $this->container->get('database')->truncate('authmap')->execute();
   }
@@ -200,15 +204,14 @@ class WalletUserManagerTest extends KernelTestBase {
 
     $user = $this->walletUserManager->createUserFromWallet($walletAddress);
 
-    // Check that wallet is linked in database.
-    $database = $this->container->get('database');
-    $linkedUid = $database->select('wallet_auth_wallet_address', 'wa')
-      ->fields('wa', ['uid'])
-      ->condition('wa.wallet_address', $walletAddress)
-      ->execute()
-      ->fetchField();
+    // Check that wallet is linked via entity.
+    $wallets = $this->container->get('entity_type.manager')->getStorage('wallet_address')->loadByProperties([
+      'wallet_address' => $walletAddress,
+    ]);
 
-    $this->assertEquals($user->id(), $linkedUid);
+    $this->assertCount(1, $wallets);
+    $wallet = reset($wallets);
+    $this->assertEquals($user->id(), $wallet->getOwnerId());
   }
 
   /**
@@ -239,15 +242,14 @@ class WalletUserManagerTest extends KernelTestBase {
     // Link wallet to user.
     $this->walletUserManager->linkWalletToUser($walletAddress, (int) $user->id());
 
-    // Verify link in database.
-    $database = $this->container->get('database');
-    $linkedUid = $database->select('wallet_auth_wallet_address', 'wa')
-      ->fields('wa', ['uid'])
-      ->condition('wa.wallet_address', $walletAddress)
-      ->execute()
-      ->fetchField();
+    // Verify link via entity.
+    $wallets = $this->container->get('entity_type.manager')->getStorage('wallet_address')->loadByProperties([
+      'wallet_address' => $walletAddress,
+    ]);
 
-    $this->assertEquals($user->id(), $linkedUid);
+    $this->assertCount(1, $wallets);
+    $wallet = reset($wallets);
+    $this->assertEquals($user->id(), $wallet->getOwnerId());
   }
 
   /**
@@ -270,22 +272,21 @@ class WalletUserManagerTest extends KernelTestBase {
 
     // Create a new instance with mocked time.
     $walletUserManager = new WalletUserManager(
-      $this->container->get('database'),
       $this->container->get('externalauth.externalauth'),
       $this->container->get('entity_type.manager'),
       $this->container->get('logger.factory'),
-      $mockTime
+      $mockTime,
+      $this->container->get('event_dispatcher')
     );
 
     // Link wallet first time.
     $walletUserManager->linkWalletToUser($walletAddress, (int) $user->id());
 
-    $database = $this->container->get('database');
-    $firstLastUsed = $database->select('wallet_auth_wallet_address', 'wa')
-      ->fields('wa', ['last_used'])
-      ->condition('wa.wallet_address', $walletAddress)
-      ->execute()
-      ->fetchField();
+    $wallets = $this->container->get('entity_type.manager')->getStorage('wallet_address')->loadByProperties([
+      'wallet_address' => $walletAddress,
+    ]);
+    $wallet = reset($wallets);
+    $firstLastUsed = $wallet->getLastUsedTime();
 
     // Mock time service for second link (later time).
     $laterTime = $initialTime + 100;
@@ -294,21 +295,22 @@ class WalletUserManagerTest extends KernelTestBase {
 
     // Create a new instance with new mocked time.
     $walletUserManager2 = new WalletUserManager(
-      $this->container->get('database'),
       $this->container->get('externalauth.externalauth'),
       $this->container->get('entity_type.manager'),
       $this->container->get('logger.factory'),
-      $mockTime2
+      $mockTime2,
+      $this->container->get('event_dispatcher')
     );
 
     // Link again.
     $walletUserManager2->linkWalletToUser($walletAddress, (int) $user->id());
 
-    $secondLastUsed = $database->select('wallet_auth_wallet_address', 'wa')
-      ->fields('wa', ['last_used'])
-      ->condition('wa.wallet_address', $walletAddress)
-      ->execute()
-      ->fetchField();
+    // Reload wallet to get updated value.
+    $wallets = $this->container->get('entity_type.manager')->getStorage('wallet_address')->loadByProperties([
+      'wallet_address' => $walletAddress,
+    ]);
+    $wallet = reset($wallets);
+    $secondLastUsed = $wallet->getLastUsedTime();
 
     // Verify timestamps reflect the mocked times.
     $this->assertEquals($initialTime, $firstLastUsed);
@@ -345,15 +347,13 @@ class WalletUserManagerTest extends KernelTestBase {
     $this->walletUserManager->linkWalletToUser($walletAddress, (int) $user2->id());
 
     // Verify wallet is still linked to first user.
-    $database = $this->container->get('database');
-    $linkedUid = $database->select('wallet_auth_wallet_address', 'wa')
-      ->fields('wa', ['uid'])
-      ->condition('wa.wallet_address', $walletAddress)
-      ->execute()
-      ->fetchField();
-
-    $this->assertEquals($user1->id(), $linkedUid);
-    $this->assertNotEquals($user2->id(), $linkedUid);
+    $wallets = $this->container->get('entity_type.manager')->getStorage('wallet_address')->loadByProperties([
+      'wallet_address' => $walletAddress,
+    ]);
+    $this->assertCount(1, $wallets);
+    $wallet = reset($wallets);
+    $this->assertEquals($user1->id(), $wallet->getOwnerId());
+    $this->assertNotEquals($user2->id(), $wallet->getOwnerId());
   }
 
   /**
@@ -429,6 +429,29 @@ class WalletUserManagerTest extends KernelTestBase {
   }
 
   /**
+   * Tests loading user by inactive wallet returns NULL.
+   */
+  public function testLoadUserByInactiveWallet(): void {
+    $walletAddress = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
+
+    // Create user and link wallet.
+    $user = $this->walletUserManager->createUserFromWallet($walletAddress);
+
+    // Deactivate the wallet.
+    $wallets = $this->container->get('entity_type.manager')->getStorage('wallet_address')->loadByProperties([
+      'wallet_address' => $walletAddress,
+    ]);
+    $wallet = reset($wallets);
+    $wallet->setActive(FALSE);
+    $wallet->save();
+
+    // Try to load by wallet - should return NULL for inactive wallets.
+    $loadedUser = $this->walletUserManager->loadUserByWalletAddress($walletAddress);
+
+    $this->assertNull($loadedUser);
+  }
+
+  /**
    * Tests getting wallets for a user.
    */
   public function testGetUserWallets(): void {
@@ -445,6 +468,34 @@ class WalletUserManagerTest extends KernelTestBase {
     $this->assertCount(2, $wallets);
     $this->assertContains($wallet1, $wallets);
     $this->assertContains($wallet2, $wallets);
+  }
+
+  /**
+   * Tests getting wallets for a user excludes inactive wallets.
+   */
+  public function testGetUserWalletsExcludesInactive(): void {
+    $wallet1 = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
+    $wallet2 = '0x1234567890123456789012345678901234567890';
+
+    // Create user and link multiple wallets.
+    $user = $this->walletUserManager->createUserFromWallet($wallet1);
+    $this->walletUserManager->linkWalletToUser($wallet2, (int) $user->id());
+
+    // Deactivate the second wallet.
+    $wallets = $this->container->get('entity_type.manager')->getStorage('wallet_address')->loadByProperties([
+      'wallet_address' => $wallet2,
+    ]);
+    $wallet = reset($wallets);
+    $wallet->setActive(FALSE);
+    $wallet->save();
+
+    // Get all wallets for user.
+    $wallets = $this->walletUserManager->getUserWallets((int) $user->id());
+
+    // Should only return the active wallet.
+    $this->assertCount(1, $wallets);
+    $this->assertContains($wallet1, $wallets);
+    $this->assertNotContains($wallet2, $wallets);
   }
 
   /**
@@ -496,22 +547,21 @@ class WalletUserManagerTest extends KernelTestBase {
 
     // Create a new instance with mocked time.
     $walletUserManager = new WalletUserManager(
-      $this->container->get('database'),
       $this->container->get('externalauth.externalauth'),
       $this->container->get('entity_type.manager'),
       $this->container->get('logger.factory'),
-      $mockTime
+      $mockTime,
+      $this->container->get('event_dispatcher')
     );
 
     // Create user.
     $user = $walletUserManager->loginOrCreateUser($walletAddress);
 
-    $database = $this->container->get('database');
-    $firstLastUsed = $database->select('wallet_auth_wallet_address', 'wa')
-      ->fields('wa', ['last_used'])
-      ->condition('wa.wallet_address', $walletAddress)
-      ->execute()
-      ->fetchField();
+    $wallets = $this->container->get('entity_type.manager')->getStorage('wallet_address')->loadByProperties([
+      'wallet_address' => $walletAddress,
+    ]);
+    $wallet = reset($wallets);
+    $firstLastUsed = $wallet->getLastUsedTime();
 
     // Mock time service for second login (later time).
     $laterTime = $initialTime + 100;
@@ -520,21 +570,22 @@ class WalletUserManagerTest extends KernelTestBase {
 
     // Create a new instance with new mocked time.
     $walletUserManager2 = new WalletUserManager(
-      $this->container->get('database'),
       $this->container->get('externalauth.externalauth'),
       $this->container->get('entity_type.manager'),
       $this->container->get('logger.factory'),
-      $mockTime2
+      $mockTime2,
+      $this->container->get('event_dispatcher')
     );
 
     // Login again.
     $user = $walletUserManager2->loginOrCreateUser($walletAddress);
 
-    $secondLastUsed = $database->select('wallet_auth_wallet_address', 'wa')
-      ->fields('wa', ['last_used'])
-      ->condition('wa.wallet_address', $walletAddress)
-      ->execute()
-      ->fetchField();
+    // Reload wallet to get updated value.
+    $wallets = $this->container->get('entity_type.manager')->getStorage('wallet_address')->loadByProperties([
+      'wallet_address' => $walletAddress,
+    ]);
+    $wallet = reset($wallets);
+    $secondLastUsed = $wallet->getLastUsedTime();
 
     // Verify timestamps reflect the mocked times.
     $this->assertEquals($initialTime, $firstLastUsed);
