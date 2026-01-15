@@ -11,7 +11,6 @@ use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Routing\RedirectDestinationInterface;
-use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\wallet_auth\Entity\WalletAddressInterface;
 
 /**
@@ -115,11 +114,24 @@ class WalletAddressListBuilder extends EntityListBuilder {
       '#title' => $entity->getWalletAddress(),
       '#url' => $entity->toUrl('canonical'),
     ];
-    $row['uid']['data'] = [
-      '#type' => 'link',
-      '#title' => $entity->getOwner()->getDisplayName(),
-      '#url' => $entity->getOwner()->toUrl('canonical'),
-    ];
+
+    // Handle orphaned wallets where the user was deleted.
+    $owner = $entity->getOwner();
+    if ($owner && $owner->id()) {
+      $row['uid']['data'] = [
+        '#type' => 'link',
+        '#title' => $owner->getDisplayName(),
+        '#url' => $owner->toUrl('canonical'),
+      ];
+    }
+    else {
+      $row['uid']['data'] = [
+        '#markup' => $this->t('<em>Deleted user (uid: @uid)</em>', [
+          '@uid' => $entity->getOwnerId(),
+        ]),
+      ];
+    }
+
     $row['created'] = $this->dateFormatter->format($entity->getCreatedTime(), 'short');
     $row['last_used'] = $this->dateFormatter->format($entity->getLastUsedTime(), 'short');
     $row['status'] = $entity->isActive() ? $this->t('Active') : $this->t('Disabled');

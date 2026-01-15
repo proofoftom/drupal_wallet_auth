@@ -121,8 +121,17 @@ class WalletUserManager implements WalletUserManagerInterface {
 
       $user = $wallet->getOwner();
 
+      // Handle orphaned wallets where user was deleted.
+      if (!$user || !$user->id()) {
+        $this->logger->notice('Cleaning up orphaned wallet @wallet (user deleted)', [
+          '@wallet' => $walletAddress,
+        ]);
+        $wallet->delete();
+        return NULL;
+      }
+
       // Also check if user is active.
-      if ($user && $user->isActive()) {
+      if ($user->isActive()) {
         return $user;
       }
 
@@ -168,9 +177,13 @@ class WalletUserManager implements WalletUserManagerInterface {
         $isNew = TRUE;
       }
       else {
+        // Check if the current owner still exists.
+        $currentOwner = $wallet->getOwner();
+        $ownerExists = $currentOwner && $currentOwner->id();
+
         // Check if wallet is linked to a different user.
-        if ($wallet->getOwnerId() != $uid) {
-          // Wallet is linked to a different user - cannot reassign.
+        if ($ownerExists && $wallet->getOwnerId() != $uid) {
+          // Wallet is linked to a different active user - cannot reassign.
           $this->logger->warning('Attempted to link wallet @wallet to user @uid, but already linked to @existing', [
             '@wallet' => $walletAddress,
             '@uid' => $uid,
@@ -178,6 +191,17 @@ class WalletUserManager implements WalletUserManagerInterface {
           ]);
           return;
         }
+
+        // If owner was deleted, reassign the wallet to new user.
+        if (!$ownerExists) {
+          $this->logger->notice('Reassigning orphaned wallet @wallet to user @uid (previous owner deleted)', [
+            '@wallet' => $walletAddress,
+            '@uid' => $uid,
+          ]);
+          $wallet->setOwnerId($uid);
+          $isNew = TRUE;
+        }
+
         // Update existing wallet.
         $wallet->setLastUsedTime($currentTime);
         $wallet->setActive(TRUE);
